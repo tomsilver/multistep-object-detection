@@ -4,12 +4,13 @@ This module implements a 2D grid-based word search environment where an agent ca
 in four directions and make guesses about target word locations.
 """
 
-from typing import Any, Optional
+from typing import Optional
 
 import gymnasium as gym
 import numpy as np
-from common_words import COMMON_WORDS_BY_LENGTH
 from gymnasium import spaces
+
+from multistep_object_detection.Environments.common_words import COMMON_WORDS_BY_LENGTH
 
 
 class EnvTwo(gym.Env):
@@ -142,7 +143,7 @@ class EnvTwo(gym.Env):
         self.step_penalty = step_penalty
 
         self._agent_location = [-1, -1]  # Agent position [row, col]
-        self._grid = None  # The 2D grid of characters
+        self._grid: np.ndarray | None = None  # The 2D grid of characters
         self._target_string = None  # The target substring
         self._target_start_pos = [-1, -1]  # Starting position of target [row, col]
         self._target_end_pos = [-1, -1]  # Ending position of target [row, col]
@@ -267,6 +268,7 @@ class EnvTwo(gym.Env):
         target string."""
         row, col = self._agent_location
         if 0 <= row < self.size and 0 <= col < self.size:
+            assert self._grid is not None
             current_char = self._grid[row, col]
         else:
             current_char = "_"
@@ -279,6 +281,7 @@ class EnvTwo(gym.Env):
 
     def _get_info(self) -> dict:
         """This is auxiliary debugging information."""
+        assert self._grid is not None
         return {
             "target_start_pos": self._target_start_pos,
             "target_end_pos": self._target_end_pos,

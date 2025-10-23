@@ -7,10 +7,9 @@ from typing import Any, Optional, Tuple
 
 import gymnasium as gym
 import numpy as np
-from common_words import (
-    COMMON_WORDS_BY_LENGTH,
-)
 from gymnasium import spaces
+
+from multistep_object_detection.Environments.common_words import COMMON_WORDS_BY_LENGTH
 
 
 class EnvOne(gym.Env):
@@ -196,8 +195,8 @@ class EnvOne(gym.Env):
             return (
                 grid,
                 target_string,
-                target_start,
-                target_start + self.target_size - 1,
+                int(target_start),
+                int(target_start + self.target_size - 1),
             )
 
         # Randomly decide if target should be forwards or backwards
@@ -210,7 +209,12 @@ class EnvOne(gym.Env):
         for i, char in enumerate(target_string):
             grid[target_start + i] = char
 
-        return grid, target_string, target_start, target_start + self.target_size - 1
+        return (
+            grid,
+            target_string,
+            int(target_start),
+            int(target_start + self.target_size - 1),
+        )
 
     def _char_to_num(self, char: str) -> int:
         """Convert character to number for observation space.
