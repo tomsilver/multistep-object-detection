@@ -4,7 +4,7 @@ This module implements a 2D grid-based word search environment where an agent ca
 in four directions and make guesses about target word locations.
 """
 
-from typing import Any, Optional
+from typing import Optional
 
 import gymnasium as gym
 import numpy as np
