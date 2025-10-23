@@ -4,7 +4,7 @@ This module implements a 2D grid-based word search environment where an agent ca
 in four directions and make guesses about target word locations.
 """
 
-from typing import Optional
+from typing import Any, Optional
 
 import gymnasium as gym
 import numpy as np
@@ -19,19 +19,51 @@ class EnvTwo(gym.Env):
     agent can move in four directions and make guesses about word locations.
     """
 
-    def __init__(self, size: int = 15, target_size: int = 3, alphabet=None,
-                 correct_reward=100, wrong_penalty=-50, step_penalty=-0.1,
-                 prop_empty=0.0, alphabet_real=False, allow_backwards=True):
+    def __init__(
+        self,
+        size: int = 15,
+        target_size: int = 3,
+        alphabet=None,
+        correct_reward=100,
+        wrong_penalty=-50,
+        step_penalty=-0.1,
+        prop_empty=0.0,
+        alphabet_real=False,
+        allow_backwards=True,
+    ):
         """Initialize the 2D word search environment."""
         super().__init__()
 
         # Set default alphabet if none provided
         if alphabet is None:
             alphabet = {
-                "a": 1, "b": 1, "c": 1, "d": 1, "e": 1, "f": 1, "g": 1, "h": 1,
-                "i": 1, "j": 1, "k": 1, "l": 1, "m": 1, "n": 1, "o": 1, "p": 1,
-                "q": 1, "r": 1, "s": 1, "t": 1, "u": 1, "v": 1, "w": 1, "x": 1,
-                "y": 1, "z": 1, "_": 1
+                "a": 1,
+                "b": 1,
+                "c": 1,
+                "d": 1,
+                "e": 1,
+                "f": 1,
+                "g": 1,
+                "h": 1,
+                "i": 1,
+                "j": 1,
+                "k": 1,
+                "l": 1,
+                "m": 1,
+                "n": 1,
+                "o": 1,
+                "p": 1,
+                "q": 1,
+                "r": 1,
+                "s": 1,
+                "t": 1,
+                "u": 1,
+                "v": 1,
+                "w": 1,
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "_": 1,
             }
 
         # These are the parameters for the grid that are defaulted above
@@ -46,12 +78,32 @@ class EnvTwo(gym.Env):
             # English letter frequencies (approximate) - completely override alphabet
             # These are the raw percentages, will be normalized below
             raw_frequencies = {
-                "a": 8.12, "b": 1.49, "c": 2.78, "d": 4.25, "e": 12.02,
-                "f": 2.23, "g": 2.02, "h": 6.09, "i": 6.97, "j": 0.15,
-                "k": 0.77, "l": 4.03, "m": 2.41, "n": 6.75, "o": 7.51,
-                "p": 1.93, "q": 0.10, "r": 5.99, "s": 6.33, "t": 9.06,
-                "u": 2.76, "v": 0.98, "w": 2.36, "x": 0.15, "y": 1.97,
-                "z": 0.07
+                "a": 8.12,
+                "b": 1.49,
+                "c": 2.78,
+                "d": 4.25,
+                "e": 12.02,
+                "f": 2.23,
+                "g": 2.02,
+                "h": 6.09,
+                "i": 6.97,
+                "j": 0.15,
+                "k": 0.77,
+                "l": 4.03,
+                "m": 2.41,
+                "n": 6.75,
+                "o": 7.51,
+                "p": 1.93,
+                "q": 0.10,
+                "r": 5.99,
+                "s": 6.33,
+                "t": 9.06,
+                "u": 2.76,
+                "v": 0.98,
+                "w": 2.36,
+                "x": 0.15,
+                "y": 1.97,
+                "z": 0.07,
             }
 
             # Normalize frequencies to sum to (1 - prop_empty)
@@ -78,8 +130,8 @@ class EnvTwo(gym.Env):
                 # Scale down all existing frequencies
                 for char in self.alphabet:
                     self.alphabet[char] = (
-                        (self.alphabet[char] / total_letters) * target_sum
-                    )
+                        self.alphabet[char] / total_letters
+                    ) * target_sum
 
                 # Add empty spaces
                 self.alphabet["_"] = prop_empty
@@ -107,21 +159,25 @@ class EnvTwo(gym.Env):
         # This is the box space for when the agent guesses
         self.guess_space = spaces.Box(
             low=0,
-            high=size-1,
+            high=size - 1,
             shape=(4,),  # [start_row, start_col, end_row, end_col]
-            dtype=np.int32
+            dtype=np.int32,
         )
 
         # Observation space: dictionary
-        self.observation_space = spaces.Dict({
-            "agent_location": spaces.Box(
-                low=0, high=size-1, shape=(2,), dtype=np.int32
-            ),  # [row, col]
-            "current_character": spaces.Discrete(29),  # 1-26 is a-z, 27 is _
-            "target_string": spaces.Text(max_length=target_size),  # The target string
-        })
+        self.observation_space = spaces.Dict(
+            {
+                "agent_location": spaces.Box(
+                    low=0, high=size - 1, shape=(2,), dtype=np.int32
+                ),  # [row, col]
+                "current_character": spaces.Discrete(29),  # 1-26 is a-z, 27 is _
+                "target_string": spaces.Text(
+                    max_length=target_size
+                ),  # The target string
+            }
+        )
 
-    def _generate_grid(self):
+    def _generate_grid(self) -> tuple:
         """Generating a 2D grid based on the probabilities, size, target_string, and
         target_size.
 
@@ -146,30 +202,32 @@ class EnvTwo(gym.Env):
             # Fallback: choose random substring if target_size not in common words
             row = self.np_random.integers(0, self.size)
             col = self.np_random.integers(0, self.size - self.target_size + 1)
-            target_string = ''.join(grid[row, col:col + self.target_size])
+            target_string = "".join(grid[row, col : col + self.target_size])
             return (
-                grid, target_string, [row, col],
-                [row, col + self.target_size - 1], 'horizontal', 'forward'
+                grid,
+                target_string,
+                [row, col],
+                [row, col + self.target_size - 1],
+                "horizontal",
+                "forward",
             )
 
-        target_string = self.np_random.choice(
-            COMMON_WORDS_BY_LENGTH[self.target_size]
-        )
+        target_string = self.np_random.choice(COMMON_WORDS_BY_LENGTH[self.target_size])
 
         # Randomly choose direction (horizontal or vertical)
-        direction = self.np_random.choice(['horizontal', 'vertical'])
+        direction = self.np_random.choice(["horizontal", "vertical"])
 
         # Randomly choose orientation (forward or backward)
-        orientation = 'forward'
+        orientation = "forward"
         if self.allow_backwards:
-            orientation = self.np_random.choice(['forward', 'backward'])
+            orientation = self.np_random.choice(["forward", "backward"])
 
         # If backward, reverse the target string
-        if orientation == 'backward':
+        if orientation == "backward":
             target_string = target_string[::-1]
 
         # Place the target string at a random position in the grid
-        if direction == 'horizontal':
+        if direction == "horizontal":
             # Horizontal placement
             row = self.np_random.integers(0, self.size)
             col = self.np_random.integers(0, self.size - self.target_size + 1)
@@ -192,26 +250,26 @@ class EnvTwo(gym.Env):
 
         return grid, target_string, target_start, target_end, direction, orientation
 
-    def _char_to_num(self, char):
+    def _char_to_num(self, char: str) -> int:
         """This is solely for the observation space, printing out 0 if some error has
         occurred, 1-26 for all the letters a through z, and 27 for if the spot is "_" or
         blank."""
-        if char == '_':
+        if char == "_":
             return 27
-        if char == '#':
+        if char == "#":
             return 28
-        if 'a' <= char <= 'z':
-            return ord(char) - ord('a') + 1
+        if "a" <= char <= "z":
+            return ord(char) - ord("a") + 1
         return 0
 
-    def _get_obs(self):
+    def _get_obs(self) -> dict:
         """Get current observation including agent location, current character, and
         target string."""
         row, col = self._agent_location
         if 0 <= row < self.size and 0 <= col < self.size:
             current_char = self._grid[row, col]
         else:
-            current_char = '_'
+            current_char = "_"
 
         return {
             "agent_location": np.array(self._agent_location, dtype=np.int32),
@@ -219,7 +277,7 @@ class EnvTwo(gym.Env):
             "target_string": self._target_string,
         }
 
-    def _get_info(self):
+    def _get_info(self) -> dict:
         """This is auxiliary debugging information."""
         return {
             "target_start_pos": self._target_start_pos,
@@ -229,7 +287,9 @@ class EnvTwo(gym.Env):
             "grid": self._grid.tolist(),
         }
 
-    def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
+    def reset(
+        self, *, seed: Optional[int] = None, options: Optional[dict] = None
+    ) -> tuple[dict, dict]:
         """Reset the environment for a new episode.
 
         Generates new random 2D environment, places agent at center position, and
@@ -238,9 +298,14 @@ class EnvTwo(gym.Env):
         super().reset(seed=seed, options=options)
 
         # Generate new grid and target
-        (self._grid, self._target_string, self._target_start_pos,
-         self._target_end_pos, self._target_direction,
-         self._target_orientation) = self._generate_grid()
+        (
+            self._grid,
+            self._target_string,
+            self._target_start_pos,
+            self._target_end_pos,
+            self._target_direction,
+            self._target_orientation,
+        ) = self._generate_grid()
 
         # Place agent at center
         self._agent_location = [self.size // 2, self.size // 2]
@@ -250,7 +315,7 @@ class EnvTwo(gym.Env):
 
         return observation, info
 
-    def step(self, action):
+    def step(self, action: int) -> tuple[dict, float, bool, bool, dict]:
         """Execute one timestep in the environment.
 
         Actions: 0=up, 1=down, 2=left, 3=right, 4=guess
@@ -283,8 +348,10 @@ class EnvTwo(gym.Env):
 
         elif action == 4:  # Guess
             # Check if guess is correct
-            if (self._guess_start == self._target_start_pos and
-                    self._guess_end == self._target_end_pos):
+            if (
+                self._guess_start == self._target_start_pos
+                and self._guess_end == self._target_end_pos
+            ):
                 reward = self.correct_reward
                 terminated = True  # End program if right
             else:
@@ -295,7 +362,9 @@ class EnvTwo(gym.Env):
 
         return observation, reward, terminated, truncated, info
 
-    def set_guess(self, start_row: int, start_col: int, end_row: int, end_col: int):
+    def set_guess(
+        self, start_row: int, start_col: int, end_row: int, end_col: int
+    ) -> None:
         """Set the guess coordinates before calling step(4)"""
         self._guess_start = [start_row, start_col]
         self._guess_end = [end_row, end_col]
@@ -305,13 +374,13 @@ class EnvTwo(gym.Env):
         self.set_guess(start_row, start_col, end_row, end_col)
         return self.step(4)
 
-    def render(self, mode='human'):
+    def render(self, mode="human"):
         """Render the current state of the environment.
 
         Displays: 2D grid, agent position, target string location,
         and target details for debugging
         """
-        if mode == 'human':
+        if mode == "human":
             print(f"\n2D Grid ({self.size}x{self.size}):")
 
             # Print grid as is
